@@ -1,3 +1,22 @@
+//В сервере каких-то особых моментов нет
+//Было решено использовать poll, так как select выигрывает лишь в том,
+//что может быть запущен на совсем старых Linux системах. В данном задании
+//мне это показалось не актуальным
+//Конструктор класса использует порт, который мы слушаем
+//хост и порт БД и файл для логгирования
+//Данный прокси-сервер работает по приницпу соединения с БД и, если запрос валиден,
+//он отправлял бы его в бд. Если запрос не валиден, то ничего бы не делал
+//Можно было бы сделать булевую функцию на валидность запроса, но я честно забыл это сделать
+//Так же не особо понятно что делать в случае не валидного запроса: разрывать соединение сразу/
+//отправлять клиенту ответ о не валидности запроса и ждать новый. Этот момент не проработан в данной
+//программе ввиду четких инструкций.
+//Многопоточность можно было бы тут использовать следующим образом, так как она не запрещена вообще,
+//а лишь говориться, что "без создания потока (thread) на каждое соединение".
+//Создадим поток уже после того, как сервер получит обращение, отправим его на обработку, а сервер
+//пусть обрабатывает или принимает следующее соединение. Т.о. поток будет как бы уже "после" серверной части
+//и соединения. Так же в таком случае нужно будет внимательно отнестись к записи в файл, чтобы не было ситуации,
+//когда два поток пытается получить доступ к ресурку, а он занят другим потоком
+
 #include <string>
 #include <vector>
 #include <poll.h>
@@ -9,22 +28,22 @@
 #include "PostgreSQLParser.h"
 
 class ProxyServer{
-    private:
-    int _serverSocket = 0;
-    std::string _dbHost{};
-    int _dbPort = 0;
-    Logger _logger;
-    bool _isRun = false;
-    std::vector<pollfd> _pollFds{};
+private:
+int _serverSocket = 0;
+std::string _dbHost{};
+int _dbPort = 0;
+Logger _logger;
+bool _isRun = false;
+std::vector<pollfd> _pollFds{};
 
-    public:
-    ProxyServer(int listenPort, const std::string& dbHost, int dbPort, const std::string& logFile);
+public:
+ProxyServer(int listenPort, const std::string& dbHost, int dbPort, const std::string& logFile);
 
-    void Start();
-    void Stop();
+void Start();
+void Stop();
 
-    void AcceptNewConnection();
-    void HandleCommunication(int clientSocket, int dbSocket);
-    void ProcessPollEvents();
+void AcceptNewConnection();
+void HandleCommunication(int clientSocket, int dbSocket);
+void ProcessPollEvents();
 
 };
